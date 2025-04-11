@@ -1,8 +1,9 @@
 const express = require("express");
 const Router = express.Router;
 const adminRouter = Router();
+const { adminModel } = require("../db");
 
-adminRouter.use(adminMiddleware);
+// adminRouter.use(adminMiddleware);
 
 adminRouter.post("/signup", (req, res) => {
   res.json({
@@ -16,19 +17,19 @@ adminRouter.post("/login", (req, res) => {
   });
 });
 
-adminRouter.post("/course", adminMiddleware, (req, res) => {
+adminRouter.post("/course", (req, res) => {
   res.json({
     message: "singup endpoint",
   });
 });
 
-adminRouter.put("/course", adminMiddleware, (req, res) => {
+adminRouter.put("/course", (req, res) => {
   res.json({
     message: "singup endpoint",
   });
 });
 
-adminRouter.get("/course/bulk", adminMiddleware, (req, res) => {
+adminRouter.get("/course/bulk", (req, res) => {
   res.json({
     message: "singup endpoint",
   });
