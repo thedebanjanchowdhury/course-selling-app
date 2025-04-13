@@ -2,6 +2,9 @@ const express = require("express");
 const Router = express.Router;
 const adminRouter = Router();
 const { adminModel } = require("../db");
+const bcrypt = require("bcrypt");
+const z = require("zod");
+const jwt = require("jsonwebtoken");
 
 // adminRouter.use(adminMiddleware);
 
