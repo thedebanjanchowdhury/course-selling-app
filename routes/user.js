@@ -5,8 +5,6 @@ const { userModel } = require("../db");
 const z = require("zod");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const { parse } = require("dotenv");
-const JWT_SECRET = "my-jwt-secret";
 
 // input data validation
 const userSchema = z.object({
@@ -24,28 +22,21 @@ userRouter.post("/signup", async (req, res) => {
   if (!parseResult.success) {
     return res.status(400).json({ errors: parseResult.error.format() });
   }
-  const { firstName, lastName, email, password } = parseResult.data;
 
+  const { firstName, lastName, email, password } = parseResult.data;
   try {
-    // check if user already exists
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {
       return res.status(409).json({ message: "User already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const newUser = await userModel.create({
       firstName: firstName,
       lastName: lastName,
       email: email,
       password: hashedPassword,
     });
-
-    const token = jwt.sign(
-      { id: newUser._id, email: newUser.email },
-      JWT_SECRET
-    );
 
     res
       .status(201)
@@ -55,10 +46,29 @@ userRouter.post("/signup", async (req, res) => {
   }
 });
 
-userRouter.post("/login", (req, res) => {
-  res.json({
-    message: "login endpoint",
-  });
+// login routing point
+userRouter.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      return res.status(403).json({ message: "User not found" });
+    }
+
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
+      return res.status(401).json({ message: "Invalid Password" });
+    }
+
+    const token = jwt.sign({ id: user._id }, `${process.env.JWT_USER_SECRET}`);
+
+    res.status(200).json({
+      message: "Login Successful",
+      token,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
 });
 
 userRouter.get("/purchases", (req, res) => {

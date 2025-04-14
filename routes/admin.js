@@ -6,18 +6,66 @@ const bcrypt = require("bcrypt");
 const z = require("zod");
 const jwt = require("jsonwebtoken");
 
-// adminRouter.use(adminMiddleware);
-
-adminRouter.post("/signup", (req, res) => {
-  res.json({
-    message: "singup endpoint",
-  });
+const adminSchema = z.object({
+  firstName: z.string().min(1, { message: "First name is required" }),
+  lastName: z.string().min(1, { message: "Last name is required" }),
+  email: z.string().email({ message: "Invalid email address" }),
+  password: z
+    .string()
+    .min(6, { message: "Password must contain at least 6 characters" }),
 });
 
-adminRouter.post("/login", (req, res) => {
-  res.json({
-    message: "login endpoint",
-  });
+adminRouter.post("/signup", async (req, res) => {
+  const parseResult = adminSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    res.status(400).json({ errors: parseResult.error.format() });
+  }
+
+  const { firstName, lastName, email, password } = parseResult.data;
+  try {
+    const existingUser = await adminModel.findOne({ email });
+    if (existingUser) {
+      res.status(409).json({ message: "User already exists" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = await adminModel.create({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+    });
+    res
+      .status(201)
+      .json({ message: "User Created Successfully", user: newUser });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
+  }
+});
+
+adminRouter.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const admin = await adminModel.findOne({ email });
+    if (!admin) {
+      req.status(403).json({ message: "User not found" });
+    }
+
+    const validPassword = await bcrypt.compare(password, admin.password);
+    if (!validPassword) {
+      res.status(401).json({ message: "Invalid Password" });
+    }
+
+    const token = jwt.sign(
+      { id: admin._id },
+      `${process.env.JWT_ADMIN_SECRET}`
+    );
+    res.status(200).json({ message: "Login Successfull", token });
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
 });
 
 adminRouter.post("/course", (req, res) => {
