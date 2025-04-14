@@ -113,10 +113,16 @@ adminRouter.put("/course", adminMiddleware, async (req, res) => {
   }
 });
 
-adminRouter.get("/course/bulk", (req, res) => {
-  res.json({
-    message: "singup endpoint",
-  });
+adminRouter.get("/course/bulk", adminMiddleware, async (req, res) => {
+  const adminId = req.adminId;
+  try {
+    const course = await courseModel.find({ creatorId: adminId });
+    res.json({ message: "Course updated successfully", courses: course });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
+  }
 });
 
 module.exports = {
