@@ -1,6 +1,6 @@
 const express = require("express");
 const userRouter = express.Router();
-const { userModel } = require("../db");
+const { userModel, purchaseModel } = require("../db");
 
 const z = require("zod");
 const bcrypt = require("bcrypt");
@@ -71,9 +71,15 @@ userRouter.post("/login", async (req, res) => {
   }
 });
 
-userRouter.get("/purchases", (req, res) => {
-  res.json({
-    message: "purchased courses endpoint",
+userRouter.get("/purchases", async (req, res) => {
+  const userId = req.userId;
+  const purchases = await purchaseModel.find({
+    userId,
+  });
+
+  res.status(201).json({
+    message: "Courses Purchased",
+    purchases,
   });
 });
 
