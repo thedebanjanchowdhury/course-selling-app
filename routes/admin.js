@@ -1,10 +1,11 @@
 const express = require("express");
 const Router = express.Router;
 const adminRouter = Router();
-const { adminModel } = require("../db");
+const { adminModel, courseModel } = require("../db");
 const bcrypt = require("bcrypt");
 const z = require("zod");
 const jwt = require("jsonwebtoken");
+const { adminMiddleware } = require("../middleware/admin");
 
 const adminSchema = z.object({
   firstName: z.string().min(1, { message: "First name is required" }),
@@ -68,16 +69,48 @@ adminRouter.post("/login", async (req, res) => {
   }
 });
 
-adminRouter.post("/course", (req, res) => {
-  res.json({
-    message: "singup endpoint",
-  });
+adminRouter.post("/course", adminMiddleware, async (req, res) => {
+  const adminId = req.userId;
+  try {
+    const { title, description, price, imageURL } = req.body;
+    const course = await courseModel.create({
+      title,
+      description,
+      price,
+      imageURL,
+      creatorId: adminId,
+    });
+    res.json({
+      message: "Course created successfully",
+      courseId: course._id,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
 });
 
-adminRouter.put("/course", (req, res) => {
-  res.json({
-    message: "singup endpoint",
-  });
+adminRouter.put("/course", adminMiddleware, async (req, res) => {
+  const adminId = req.userId;
+  const { title, description, price, imageURL, courseId } = req.body;
+  try {
+    const course = await courseModel.updateOne(
+      { _id: courseId, creatorId: adminId },
+      {
+        title,
+        description,
+        price,
+        imageURL,
+      }
+    );
+    res.json({ message: "Course updated successfully" });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
+  }
 });
 
 adminRouter.get("/course/bulk", (req, res) => {
